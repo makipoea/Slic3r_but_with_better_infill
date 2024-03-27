@@ -11,8 +11,7 @@ See the [project homepage](https://slic3r.org/) at slic3r.org for more informati
 * `xs/src/libslic3r/`: C++ sources for libslic3r
 * `xs/t/`: test suite for libslic3r (deprecated)
 * `xs/xsp/`: bindings for calling libslic3r from Perl (XS) (deprecated)
-* 'xs/src/libslic3r/Fill/' here, I hope are the most modification
-  |-> New infill added : Nothing for know
+* 'xs/src/libslic3r/Fill/': here, I hope are the most modification
 
 
 ### Acknowledgements
