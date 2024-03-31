@@ -15,5 +15,5 @@ chemin_inclusion1="/home/makipoea/Documents/prepa/tipe/programme/Slic3r_but_with
 chemin_inclusion2="/home/makipoea/Documents/prepa/tipe/programme/Slic3r_but_with_better_infill/xs/src"
 
 
-g++ -I "$chemin_inclusion1" -I "$chemin_inclusion2" -c "$fichier_cpp" -o "$fichier_o"
+g++ -v -I "$chemin_inclusion1" -I "$chemin_inclusion2" -c "$fichier_cpp" -o "$fichier_o"
 

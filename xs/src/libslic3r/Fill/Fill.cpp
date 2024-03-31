@@ -15,12 +15,19 @@
 #include "FillPlanePath.hpp"
 #include "FillRectilinear.hpp"
 
+// ---------here are our new infill ------------------
+
+#include "Fillsin.hpp" 
+
+//   ------------------------------------------------ \\
+
 namespace Slic3r {
 
 Fill*
 Fill::new_from_type(const InfillPattern type)
 {
     switch (type) {
+        /* la liste des id sous forme d'enum peuvent etre trouver dasn PrintConfig.cpp line : 530*/
         case ipConcentric:          return new FillConcentric();
         case ipHoneycomb:           return new FillHoneycomb();
         case ip3DHoneycomb:         return new Fill3DHoneycomb();
@@ -37,6 +44,8 @@ Fill::new_from_type(const InfillPattern type)
         case ipArchimedeanChords:   return new FillArchimedeanChords();
         case ipHilbertCurve:        return new FillHilbertCurve();
         case ipOctagramSpiral:      return new FillOctagramSpiral();
+
+        case ipSin:                 return new Fillsin();          
         
         default: CONFESS("unknown type"); return NULL;
     }

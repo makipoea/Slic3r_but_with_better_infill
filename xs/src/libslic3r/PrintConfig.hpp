@@ -38,6 +38,7 @@ enum InfillPattern {
     ipTriangles, ipStars, ipCubic, 
     ipConcentric, ipHoneycomb, ip3DHoneycomb,
     ipGyroid, ipHilbertCurve, ipArchimedeanChords, ipOctagramSpiral,
+    ipSin,
 };
 
 enum SupportMaterialPattern {
@@ -84,6 +85,7 @@ template<> inline t_config_enum_values ConfigOptionEnum<InfillPattern>::get_enum
     keys_map["hilbertcurve"]        = ipHilbertCurve;
     keys_map["archimedeanchords"]   = ipArchimedeanChords;
     keys_map["octagramspiral"]      = ipOctagramSpiral;
+    keys_map["sin"]                 = ipSin;  //makipoea
     return keys_map;
 }
 

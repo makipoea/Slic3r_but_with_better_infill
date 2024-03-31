@@ -1,3 +1,4 @@
+#include<iostream>
 #include "../ClipperUtils.hpp"
 #include "../PolylineCollection.hpp"
 #include "../Surface.hpp"
@@ -150,6 +151,8 @@ Fill3DHoneycomb::_fill_surface_single(
     ExPolygon                       &expolygon,
     Polylines*                      polylines_out)
 {
+    
+    std::cout<< "sin est censsé etre present la compilation a été acualisé" << std::endl;
     // no rotation is supported for this infill pattern
     BoundingBox bb = expolygon.contour.bounding_box();
     const coord_t distance = coord_t(scale_(this->min_spacing) / this->density);

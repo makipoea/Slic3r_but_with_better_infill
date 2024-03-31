@@ -15,12 +15,17 @@ PrintConfigDef::PrintConfigDef()
     external_fill_pattern.enum_values.push_back("hilbertcurve");
     external_fill_pattern.enum_values.push_back("archimedeanchords");
     external_fill_pattern.enum_values.push_back("octagramspiral");
+
+    //external_fill_pattern.enum_values.push_back("sin");
+
     external_fill_pattern.enum_labels.push_back(__TRANS("Rectilinear"));
     external_fill_pattern.enum_labels.push_back(__TRANS("Concentric"));
     external_fill_pattern.enum_labels.push_back(__TRANS("Hilbert Curve"));
     external_fill_pattern.enum_labels.push_back(__TRANS("Archimedean Chords"));
     external_fill_pattern.enum_labels.push_back(__TRANS("Octagram Spiral"));
     
+    //external_fill_pattern.enum_labels.push_back(__TRANS("sinusoidal pattern"));
+
     ConfigOptionDef* def;
 
     def = this->add("adaptive_slicing", coBool);
@@ -550,6 +555,7 @@ PrintConfigDef::PrintConfigDef()
     def->enum_values.push_back("hilbertcurve");
     def->enum_values.push_back("archimedeanchords");
     def->enum_values.push_back("octagramspiral");
+    def->enum_values.push_back("sin"); //  makipoea
     def->enum_labels.push_back(__TRANS("Rectilinear"));
     def->enum_labels.push_back(__TRANS("Aligned Rectilinear"));
     def->enum_labels.push_back(__TRANS("Grid"));
@@ -563,6 +569,7 @@ PrintConfigDef::PrintConfigDef()
     def->enum_labels.push_back(__TRANS("Hilbert Curve"));
     def->enum_labels.push_back(__TRANS("Archimedean Chords"));
     def->enum_labels.push_back(__TRANS("Octagram Spiral"));
+    def->enum_labels.push_back(__TRANS("sinusoidal pattern")); //makipoea
     def->default_value = new ConfigOptionEnum<InfillPattern>(ipStars);
 
     def = this->add("first_layer_acceleration", coFloat);
