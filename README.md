@@ -14,7 +14,7 @@ See the [project homepage](https://slic3r.org/) at slic3r.org for more informati
 * `xs/src/libslic3r/Fill/`: here, I hope are the most modification
   -> Infill added : Nothing
 
-Pour compiler il faut juste que tu install perl (si possible depuis le terminale) que tu execute dans le dossier source perl Build.pl // pour des compilation partiels notament aprés des modifs des fichiers xs/src/libslic3r/Fill il ne suffit pas de recompiler les fichiers objets en .obj mais on peut recompiler uniquement xs avec "perl Build -xs" ce que j'ai mis 2 jours a trouver
+
 
 ### Acknowledgements
 
