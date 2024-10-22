@@ -47,6 +47,12 @@ class Point
     static Point new_scale(Pointf p);
     bool operator==(const Point& rhs) const;
     bool operator!=(const Point& rhs) const { return !(*this == rhs); }
+    /*
+    Point operator+(const Point& p) const; //makipoea
+    Point operator-(const Point& p) const; // makipeoa
+    Point operator*(float scalar) const; // makipoea
+    Point operator/(float scalar) const; // makipoea
+    */
     std::string wkt() const;
     std::string dump_perl() const;
     void scale(double factor);

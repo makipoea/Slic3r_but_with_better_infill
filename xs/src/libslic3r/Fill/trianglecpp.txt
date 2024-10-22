@@ -1,0 +1,101 @@
+#include "triangle.hpp"
+
+std::mutex console_mutex_triangle;
+
+std::lock_guard<std::mutex> lock(console_mutex_triangle);
+
+
+// Implémentation des méthodes de la classe Triangle
+Triangle::Triangle(int d, Point p0, Point p1, Point p2, function<int(Point)> densFunc, bool is_f, int max_dete)
+    : depth(d), is_feuille(is_f), sommet{p0, p1, p2}, center((p0 + p1 + p2) / 3), density(densFunc), max_depth(max_dete) {
+    children.resize(4, nullptr);
+    compute_feuille();
+    center = P
+}
+
+Triangle::~Triangle() {
+    for (int i = 0; i < 4; ++i) {
+        if (children[i] != nullptr) {
+            delete children[i];
+        } else {
+            delete feuilles[i];
+        }
+    }
+}
+
+void Triangle::display() {
+    for (int i = 0; i < 3; ++i) {
+        cout << "(" << sommet[i].x << " , " << sommet[i].y << ")  ";
+    }
+}
+
+void Triangle::compute_feuille() {
+    if (!is_feuille) {
+        Point P01 = (sommet[0] + sommet[1]) / 2;
+        Point P12 = (sommet[1] + sommet[2]) / 2;
+        Point P20 = (sommet[2] + sommet[0]) / 2;
+        feuilles[0] = new Triangle(depth + 1, sommet[0], P01, P20, density, true, max_depth);
+        feuilles[1] = new Triangle(depth + 1, P20, P12, sommet[2], density, true, max_depth);
+        feuilles[2] = new Triangle(depth + 1, P20, P01, P12, density, true, max_depth);
+        feuilles[3] = new Triangle(depth + 1, P01, sommet[1], P12, density, true, max_depth);
+    }
+}
+
+void Triangle::update() {
+    compute_feuille();
+    for (int i = 0; i < 4; i++) {
+        if (feuilles[i] != nullptr) {
+            if (depth < min(density(feuilles[i]->center), max_depth)) {
+                children[i] = feuilles[i];
+                children[i]->is_feuille = false;
+                children[i]->depth = depth + 1;
+                children[i]->update();
+            }
+        } else {
+            cout << "is_feuille " << is_feuille << " depth = " << depth << " Erreur: feuille[" << i << "] est nullptr" << endl;
+        }
+    }
+}
+
+// Implémentation des méthodes de la classe Tree
+Tree::Tree(function<int(Point)> densFunc, int max_dete) : density(densFunc), max_depth(max_dete) {
+    root = nullptr;
+}
+
+Tree::~Tree() {
+    delete root;
+}
+
+void Tree::saveToFile(const string& filename) {
+    cout << "Sauvegarde des fichiers" << endl;
+    ofstream outFile(filename);
+
+    if (!outFile.is_open()) {
+        cout << "Erreur d'ouverture du fichier : " << filename << endl;
+        return;
+    }
+
+    saveTriangle(outFile, root);
+    outFile.close();
+    cout << "Données sauvegardées dans le fichier : " << filename << endl;
+}
+
+void Tree::createRoot(Point p0, Point p1, Point p2) {
+    root = new Triangle(0, p0, p1, p2, density, false, max_depth);
+}
+
+void Tree::saveTriangle(ofstream& outFile, Triangle* triangle) {
+    if (triangle == nullptr) {
+        return;
+    }
+
+    outFile << "Triangle Depth " << triangle->depth << " : ";
+    for (int i = 0; i < 3; ++i) {
+        outFile << "(" << triangle->sommet[i].x << ", " << triangle->sommet[i].y << ") ";
+    }
+    outFile << "\n";
+
+    for (Triangle* child : triangle->children) {
+        saveTriangle(outFile, child);
+    }
+}

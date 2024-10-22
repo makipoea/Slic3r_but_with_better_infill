@@ -1,0 +1,50 @@
+#ifndef TREE_HPP
+#define TREE_HPP
+
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <functional>
+#include <cmath>
+#include <mutex> // implementer imperativement un témoin sinon c'est la crise
+#include "Point.hpp"
+
+using namespace std;
+
+class Triangle {
+    public:
+        int depth;
+        bool is_feuille;
+        function<int(Point)> density;
+        Point sommet[3];
+        Point center;
+        int max_depth;
+        vector<Triangle*> children;
+        Triangle* feuilles[4];
+
+        Triangle(int d, Point p0, Point p1, Point p2, function<int(Point)> densFunc = [](Point) { return 0; }, bool is_f = false, int max_dete = 10);
+        ~Triangle();
+
+        void display();
+        void compute_feuille();
+        void update();
+};
+
+
+class Tree {
+    public:
+        Triangle* root;
+        function<int(Point)> density;
+        int max_depth;
+
+        Tree(function<int(Point)> densFunc = [](Point) { return 0; }, int max_dete = 10);
+        ~Tree();
+
+        void saveToFile(const string& filename);
+        void createRoot(Point p0, Point p1, Point p2);
+
+    private:
+        void saveTriangle(ofstream& outFile, Triangle* triangle);
+};
+
+#endif

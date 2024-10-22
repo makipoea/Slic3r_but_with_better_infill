@@ -17,6 +17,27 @@ Point::operator==(const Point& rhs) const
 {
     return this->coincides_with(rhs);
 }
+/*
+Point Point::operator+(const Point& p) const { // makipoea
+    return Point(x + p.x, y + p.y);
+}
+
+Point Point::operator-(const Point& p) const {// makipeoa
+    return Point(x - p.x, y - p.y);
+}
+
+Point Point::operator*(float scalar) const { // makipoea
+    return Point(x * scalar, y * scalar);
+}
+
+Point Point::operator/(float scalar) const { // makipoea
+    if (scalar == 0) {
+        throw "Division d'un point par 0 "; 
+        return *this;
+    }
+    return Point(x / scalar, y / scalar);
+}
+*/
 
 Point
 Point::new_scale(Pointf p) {

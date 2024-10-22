@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Slic3r
+Icon=Slic3r
+Exec=AppRun
+Categories=Graphics;
+X-Slic3r-Version=
+Comment=Prepare 3D Models for Printing

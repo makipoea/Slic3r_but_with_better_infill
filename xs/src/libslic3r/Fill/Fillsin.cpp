@@ -12,7 +12,9 @@
 
 const double PI = 3.14159265358979323846;
 
-std::mutex console_mutex;
+std::mutex console_mutex_sin;
+
+// sinusoidal
 
 namespace Slic3r {
 
@@ -23,7 +25,7 @@ Fillsin::_fill_surface_single(
     ExPolygon                       &expolygon,
     Polylines*                      polylines_out)
 {
-    std::lock_guard<std::mutex> lock(console_mutex);
+    std::lock_guard<std::mutex> lock(console_mutex_sin);
 
     std::cout << "---------------------------------------------" << std::endl;
 
@@ -73,13 +75,13 @@ Fillsin::_fill_surface_single(
     coord_t min_x_rotate = expolygon.contour[min_x_index_point].x;
     coord_t max_x_rotate = expolygon.contour[max_x_index_point].x;
 
-    unsigned int nb_period = 10;
-    unsigned int nb_subdivision = 20;
+    unsigned int nb_period = static_cast<unsigned int>(100.0*density);
+    unsigned int nb_subdivision = 1000;
 
     std::cout<<" min_x_ rotate = " << min_x_rotate << " max_x_rotate = " << max_x_rotate<<std::endl;
 
 
-
+/*
     for (size_t i = 1; i <= nb_subdivision; i++) {
         coord_t x = min_x_rotate + i * (max_x_rotate - min_x_rotate) / nb_subdivision;
 
@@ -92,6 +94,10 @@ Fillsin::_fill_surface_single(
         }
 
         float sin_x = std::sin(2 * PI * nb_period / (max_x_rotate - min_x_rotate) * x);
+        
+        //  / ! \ look at coord_t // mm factor 
+
+        //float sin_x = std::sin(PI/(max_x_rotate-min_x_rotate)+ density*(PI/thickness_layers-PI/(max_x_rotate-min_x_rotate)));
 
         float t1 = static_cast<double>(x - expolygon.contour[indice_haut].x) / (expolygon.contour[(indice_haut - 1 + nb_point) % nb_point].x - expolygon.contour[indice_haut].x);
         float f1_x = expolygon.contour[indice_haut].y + t1 * (expolygon.contour[(indice_haut - 1 + nb_point) % nb_point].y - expolygon.contour[indice_haut].y);
@@ -111,7 +117,40 @@ Fillsin::_fill_surface_single(
 
     path_out.rotate(angle_of_rotation, expolygon.contour[min_x_index_point]);
     *polylines_out=path_out;
+*/
 
-}
+    for (size_t i = 1; i <= nb_subdivision; i++) {
+    coord_t x = min_x_rotate + i * (max_x_rotate - min_x_rotate) / nb_subdivision;
+
+    while (expolygon.contour[(indice_haut - 1 + nb_point) % nb_point].x < x) {
+        indice_haut = (indice_haut - 1 + nb_point) % nb_point;
+    }
+
+    while (expolygon.contour[(indice_bas + 1) % nb_point].x < x) {
+        indice_bas = (indice_bas + 1) % nb_point;
+    }
+
+    // Calculate frequency based on x
+    float normalized_x = (x - min_x_rotate) / (max_x_rotate - min_x_rotate); // Normalize x to [0, 1]
+    float frequency = 2.0f + 8.0f * std::abs(0.5f - normalized_x); // Adjust frequency (higher in the middle, lower at edges)
+
+    float sin_x = std::sin(frequency * PI * nb_period * normalized_x); // Use frequency to control step size
+
+    float t1 = static_cast<double>(x - expolygon.contour[indice_haut].x) / 
+                (expolygon.contour[(indice_haut - 1 + nb_point) % nb_point].x - expolygon.contour[indice_haut].x);
+    float f1_x = expolygon.contour[indice_haut].y + t1 * 
+                  (expolygon.contour[(indice_haut - 1 + nb_point) % nb_point].y - expolygon.contour[indice_haut].y);
+
+    float t2 = static_cast<double>(x - expolygon.contour[indice_bas].x) / 
+                (expolygon.contour[(indice_bas + 1) % nb_point].x - expolygon.contour[indice_bas].x);
+    float f2_x = expolygon.contour[indice_bas].y + t2 * 
+                  (expolygon.contour[(indice_bas + 1) % nb_point].y - expolygon.contour[indice_bas].y);
+
+    path_out.append(Point(static_cast<coord_t>(x), static_cast<coord_t>((f1_x + f2_x) / 2 + (f1_x - f2_x) / 2 * sin_x)));
+    }
+
+    path_out.rotate(angle_of_rotation, expolygon.contour[min_x_index_point]);
+    *polylines_out = path_out;
+    }
 
 }

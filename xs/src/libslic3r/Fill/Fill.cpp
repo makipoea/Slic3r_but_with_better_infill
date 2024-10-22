@@ -18,6 +18,7 @@
 // ---------here are our new infill ------------------
 
 #include "Fillsin.hpp" 
+#include "Fillpavage.hpp"
 
 //   ------------------------------------------------ \\
 
@@ -45,7 +46,8 @@ Fill::new_from_type(const InfillPattern type)
         case ipHilbertCurve:        return new FillHilbertCurve();
         case ipOctagramSpiral:      return new FillOctagramSpiral();
 
-        case ipSin:                 return new Fillsin();          
+        case ipSin:                 return new Fillsin();   // makipoea
+        case ipPavage:              return new Fillpavage(); // makipoea       
         
         default: CONFESS("unknown type"); return NULL;
     }
