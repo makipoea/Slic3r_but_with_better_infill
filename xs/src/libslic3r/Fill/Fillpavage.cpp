@@ -19,7 +19,7 @@ std::mutex console_mutex_pavage;
 const double PI = 3.14159265358979323846;
 
 namespace Slic3r {
-
+    //cout.setf(std::ios::unitbuf);
 
 Triangle::Triangle(int d, Point p0, Point p1, Point p2, function<int(Point)> densFunc, bool is_f, int max_dete)
     : depth(d), is_feuille(is_f), sommet{p0, p1, p2}, density(densFunc), max_depth(max_dete) {
@@ -40,15 +40,16 @@ Triangle::Triangle(int d, Point p0, Point p1, Point p2, function<int(Point)> den
 
 
 Triangle::~Triangle() {
+    cout << "destruction du triangle " << endl;
     for (int i = 0; i < 4; ++i) {
         if (children[i] != nullptr) {
             delete children[i];
             children[i] = nullptr;
         }
-        if (feuilles[i] != nullptr) {
-            delete feuilles[i];
-            feuilles[i] = nullptr;
-        }
+        //if (feuilles[i] != nullptr) {
+        //    delete feuilles[i];
+        //    feuilles[i] = nullptr;
+        //}
     }
 }
 
@@ -92,6 +93,7 @@ Tree::Tree(function<int(Point)> densFunc, int max_dete) : density(densFunc), max
 }
 
 Tree::~Tree() {
+    cout << "Destruction de l'arbre" << endl;
     if (root != nullptr){
         delete root;
     }
@@ -133,6 +135,7 @@ void Tree::saveTriangle(ofstream& outFile, Triangle* triangle) {
 }
 
 void Tree::exportPolylines(Polylines* poly, Triangle* triangle){
+    if (triangle == nullptr || poly == nullptr) return;
     if (not triangle->is_feuille){
         
         if (triangle->is_root){
@@ -153,44 +156,67 @@ void Tree::exportPolylines(Polylines* poly, Triangle* triangle){
             for (int i = 0; i<3; i++){
                 polychild2.append(triangle->children[2]->sommet[i]);
             }
-            polychild2.append(triangle->children[2]->sommet[3]);
+            polychild2.append(triangle->children[2]->sommet[0]);
             poly->push_back(polychild2);
         }
         else{
-        for (int i = 0; i < 4; ++i) {
-            if (triangle->children[i] != nullptr) {
-                switch (i) {
-                    case 0:{
-                        Polyline polychild0;
-                        polychild0.append(triangle->children[i]->sommet[0]);
-                        polychild0.append(triangle->children[i]->sommet[1]);
-                        poly->push_back(polychild0);
-                        break;
-                    }
-                    case 1:{
-                        Polyline polychild1;
-                        polychild1.append(triangle->children[i]->sommet[1]);
-                        polychild1.append(triangle->children[i]->sommet[2]);
-                        poly->push_back(polychild1);
-                        break;
-                    }
-                    case 3:{
-                        Polyline polychild3;
-                        polychild3.append(triangle->children[i]->sommet[0]);
-                        polychild3.append(triangle->children[i]->sommet[2]);
-                        poly->push_back(polychild3);
-                        break;
+            for (int i = 0; i < 4; ++i) {
+                if (triangle->children[i] != nullptr) {
+                    switch (i) {
+                        case 0:{
+                            Polyline polychild0;
+                            polychild0.append(triangle->children[i]->sommet[1]);
+                            polychild0.append(triangle->children[i]->sommet[2]);
+                            poly->push_back(polychild0);
+                            break;
+                        }
+                        case 1:{
+                            Polyline polychild1;
+                            polychild1.append(triangle->children[i]->sommet[0]);
+                            polychild1.append(triangle->children[i]->sommet[1]);
+                            poly->push_back(polychild1);
+                            break;
+                        }
+                        case 3:{
+                            Polyline polychild3;
+                            polychild3.append(triangle->children[i]->sommet[2]);
+                            polychild3.append(triangle->children[i]->sommet[0]);
+                            poly->push_back(polychild3);
+                            break;
+                        }
                     }
                 }
             }
-        }};
+        };
         for (int i = 0; i<4; i++){
             if (triangle->children[i] != nullptr){
                 exportPolylines(poly, triangle->children[i]);
             }
         }
-    }    
+    }  
+
+
 }
+
+void Tree::export_polylines_to_txt(const Polylines* polylines, const std::string& filename) {
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Error opening file: " << filename << std::endl;
+            return;
+        }
+
+        // Écrire chaque polyline dans le fichier avec une séparation entre les polylines
+        for (const Polyline& polyline : *polylines) {
+            for (const Point& p : polyline.points) {
+                file << p.x << " " << p.y << "\n";
+            }
+            file << "#\n"; // Utilise "#" pour marquer la fin d'une polyline
+        }
+
+        file.close();
+        std::cout << "Polylines exported to " << filename << std::endl;
+    }
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,38 +256,40 @@ Fillpavage::_fill_surface_single(
     long largeur = b_box.polygon()[1].x - b_box.polygon()[0].x;
     cout << "largeur = " << largeur << endl;
     cout << "hauteur  = " << hauteur << endl;
+    long x_min = b_box.polygon()[0].x;
+    long x_max = b_box.polygon()[1].x;
 
-    Tree arbre_triangulaire = Tree([](Point) -> int { return 5; }, 5);//Tree(densityFunction_pavage, 5);
-    
-    //arbre_triangulaire.createRoot(Point(static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[0].y)), 
-    //                              Point(static_cast<coord_t>(b_box.polygon()[1].x+hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[1].y)),
-    //                              Point(static_cast<coord_t>((b_box.polygon()[0].x+b_box.polygon()[1].x)/2), b_box.polygon()[0].y+ static_cast<coord_t>(tan(PI/3)*(largeur/2+hauteur/tan(PI/3)))));
+    //Tree arbre_triangulaire = Tree([](Point) -> int { return 7; }, 10);//Tree(densityFunction_pavage, 5);
+
+    auto variable_density = [x_min, x_max](const Point& P) -> int {
+        return int((4.0 / (x_max - x_min)) * (P.x - x_min) + 3);
+    };
+
+    Tree arbre_triangulaire = Tree(variable_density, 10);
+
+    arbre_triangulaire.createRoot(Point(static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[0].y)), 
+                                  Point(static_cast<coord_t>(b_box.polygon()[1].x+hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[1].y)),
+                                  Point(static_cast<coord_t>((b_box.polygon()[0].x+b_box.polygon()[1].x)/2), b_box.polygon()[0].y+ static_cast<coord_t>(tan(PI/3)*(largeur/2+hauteur/tan(PI/3)))));
 
     cout << static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)) << endl; 
     cout << static_cast<coord_t>(b_box.polygon()[0].y) << endl;
     //arbre_triangulaire.createRoot(Point(0, 0), Point(0, 1), Point(1, 1));
     //Triangle(int d, Point p0, Point p1, Point p2, function<int(Point)> densFunc = [](Point) { return 0; }, bool is_f = false, int max_dete = 10);
-    try{
-        Triangle t = Triangle(0, Point(1, 0), Point(0, 1), Point(1, 1), arbre_triangulaire.density, false, arbre_triangulaire.max_depth);
-    }
-    catch(...)
-    {
-        cout << "triangle echoue" << endl;
-    }
-    cout<<"l'initialisation de la calsse Tree c'est passé sans encombre"<<endl;;
+
+    //Triangle t = Triangle(0, Point(1, 0), Point(0, 1), Point(1, 1), arbre_triangulaire.density, false, arbre_triangulaire.max_depth);
     
-    //arbre_triangulaire.root->update();
-    try{
+    arbre_triangulaire.root->update();
+    arbre_triangulaire.saveToFile("triangle.txt");
     Polylines path_out;
-
-    //arbre_triangulaire.exportPolylines(&path_out,arbre_triangulaire.root);
-
-
-    *polylines_out=path_out; //intersection_pl(path_out, expolygon);
-    }
-    catch(...){
-        cout << "intersection echoue" << endl;
-    }
+    cout << "avant export polylines" << endl;
+    
+    arbre_triangulaire.exportPolylines(&path_out,arbre_triangulaire.root);
+    arbre_triangulaire.export_polylines_to_txt(&path_out, "path_out.txt");
+    cout << "apres export polylines" << endl;
+    path_out = intersection_pl(path_out, expolygon);
+    arbre_triangulaire.export_polylines_to_txt(&path_out, "path_out_intersection.txt");
+    *polylines_out=path_out;
+    
 }
 
 }

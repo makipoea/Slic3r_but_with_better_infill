@@ -21,6 +21,12 @@ using namespace std;
 namespace Slic3r {
 
 class Triangle {
+	/*
+                       0                                   ^
+                      / \                                / 0 \
+                     /_ _\    (ordre des sommet)        / --- \ (ordre des feuilles)
+                    2     1                            /1\/2\/3\
+    */
     public:
         int depth;
         bool is_feuille;
@@ -29,8 +35,8 @@ class Triangle {
         Point sommet[3];
         Point center;
         int max_depth;
-        vector<Triangle*> children = {nullptr, nullptr, nullptr, nullptr};
-        Triangle* feuilles[4];
+        Triangle* children[4] = {nullptr, nullptr, nullptr, nullptr};
+        Triangle* feuilles[4] = {nullptr, nullptr, nullptr, nullptr};
 
         Triangle(int d, Point p0, Point p1, Point p2, function<int(Point)> densFunc = [](Point) { return 2; }, bool is_f = false, int max_dete = 10);
         ~Triangle();
@@ -46,7 +52,7 @@ class Tree {
         Triangle* root;
         function<int(Point)> density;
         int max_depth=5;
-
+		static void export_polylines_to_txt(const Polylines* polylines, const std::string& filename);
         Tree(function<int(Point)> densFunc = [](Point) { return 2; }, int max_dete = 10);
         ~Tree();
 
