@@ -10,6 +10,8 @@
 #include "../ClipperUtils.hpp" //configuration of clipper (and basic function like offcet)
 #include "../PolylineCollection.hpp" //defintion of polyline object like struct Chaining 
 #include "../Surface.hpp"  // No idea
+
+#include "density_function.h"
 //#include "triangle.hpp"
 
 #include "Fillpavage.hpp"
@@ -40,7 +42,7 @@ Triangle::Triangle(int d, Point p0, Point p1, Point p2, function<int(Point)> den
 
 
 Triangle::~Triangle() {
-    cout << "destruction du triangle " << endl;
+    //cout << "destruction du triangle " << endl;
     for (int i = 0; i < 4; ++i) {
         if (children[i] != nullptr) {
             delete children[i];
@@ -93,7 +95,7 @@ Tree::Tree(function<int(Point)> densFunc, int max_dete) : density(densFunc), max
 }
 
 Tree::~Tree() {
-    cout << "Destruction de l'arbre" << endl;
+    //cout << "Destruction de l'arbre" << endl;
     if (root != nullptr){
         delete root;
     }
@@ -219,6 +221,38 @@ void Tree::export_polylines_to_txt(const Polylines* polylines, const std::string
 
 
 
+// Fonction pour charger la fonction density
+bool Tree::load_density() {
+    // Charger la bibliothèque partagée
+    void* handle = dlopen("./xs/src/libslic3r/Fill/libdensity.so", RTLD_LAZY);
+    if (!handle) {
+        cerr << "Erreur lors de l'ouverture de la bibliothèque: " << dlerror() << endl;
+        return false; // Return false instead of nullptr
+    }
+
+    // Effacer les erreurs précédentes
+    dlerror();
+
+    // Obtenir l'adresse de la fonction density
+    DensityFunc density_extern = (DensityFunc)dlsym(handle, "density");
+
+    // Vérifier les erreurs
+    const char* dlsym_error = dlerror();
+    if (dlsym_error) {
+        cerr << "Erreur lors du chargement de la fonction density: " << dlsym_error << endl;
+        dlclose(handle); // Fermer la bibliothèque en cas d'erreur
+        return false; // Return false instead of nullptr
+    }
+
+    // Optionnel : Fermer la bibliothèque ici ou la garder ouverte
+    // dlclose(handle); // À commenter si tu veux garder la bibliothèque ouverte
+
+    // Capture density_extern in the lambda
+    density = [this, density_extern](Point P) -> int { return density_extern(static_cast<long>(unscale(P.x-this->bbox->polygon()[0].x)), static_cast<long>(unscale(P.y-this->bbox->polygon()[3].y)));};
+
+    return true; // Return true on success
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -254,8 +288,8 @@ Fillpavage::_fill_surface_single(
     */
     long hauteur = b_box.polygon()[3].y - b_box.polygon()[0].y;
     long largeur = b_box.polygon()[1].x - b_box.polygon()[0].x;
-    cout << "largeur = " << largeur << endl;
-    cout << "hauteur  = " << hauteur << endl;
+    //cout << "largeur = " << unscale(largeur) << endl;
+    //cout << "hauteur  = " << unscale(hauteur) << endl;
     long x_min = b_box.polygon()[0].x;
     long x_max = b_box.polygon()[1].x;
 
@@ -265,29 +299,31 @@ Fillpavage::_fill_surface_single(
         return int((4.0 / (x_max - x_min)) * (P.x - x_min) + 3);
     };
 
-    Tree arbre_triangulaire = Tree(variable_density, 10);
+    Tree arbre_triangulaire = Tree();//Tree(variable_density, 10);
+    arbre_triangulaire.bbox = &b_box;
+    arbre_triangulaire.load_density();
 
     arbre_triangulaire.createRoot(Point(static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[0].y)), 
                                   Point(static_cast<coord_t>(b_box.polygon()[1].x+hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[1].y)),
                                   Point(static_cast<coord_t>((b_box.polygon()[0].x+b_box.polygon()[1].x)/2), b_box.polygon()[0].y+ static_cast<coord_t>(tan(PI/3)*(largeur/2+hauteur/tan(PI/3)))));
 
-    cout << static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)) << endl; 
-    cout << static_cast<coord_t>(b_box.polygon()[0].y) << endl;
+    //cout << static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)) << endl; 
+    //cout << static_cast<coord_t>(b_box.polygon()[0].y) << endl;
     //arbre_triangulaire.createRoot(Point(0, 0), Point(0, 1), Point(1, 1));
     //Triangle(int d, Point p0, Point p1, Point p2, function<int(Point)> densFunc = [](Point) { return 0; }, bool is_f = false, int max_dete = 10);
 
     //Triangle t = Triangle(0, Point(1, 0), Point(0, 1), Point(1, 1), arbre_triangulaire.density, false, arbre_triangulaire.max_depth);
     
     arbre_triangulaire.root->update();
-    arbre_triangulaire.saveToFile("triangle.txt");
+    //arbre_triangulaire.saveToFile("triangle.txt");
     Polylines path_out;
-    cout << "avant export polylines" << endl;
+    
     
     arbre_triangulaire.exportPolylines(&path_out,arbre_triangulaire.root);
-    arbre_triangulaire.export_polylines_to_txt(&path_out, "path_out.txt");
-    cout << "apres export polylines" << endl;
+    //arbre_triangulaire.export_polylines_to_txt(&path_out, "path_out.txt");
+    
     path_out = intersection_pl(path_out, expolygon);
-    arbre_triangulaire.export_polylines_to_txt(&path_out, "path_out_intersection.txt");
+    //arbre_triangulaire.export_polylines_to_txt(&path_out, "path_out_intersection.txt");
     *polylines_out=path_out;
     
 }

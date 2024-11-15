@@ -20,6 +20,9 @@ using namespace std;
 
 namespace Slic3r {
 
+typedef int (*DensityFunc)(long, long);
+
+
 class Triangle {
 	/*
                        0                                   ^
@@ -49,6 +52,7 @@ class Triangle {
 
 class Tree {
     public:
+		BoundingBox* bbox = nullptr; //bbox de la piece 
         Triangle* root;
         function<int(Point)> density;
         int max_depth=5;
@@ -59,6 +63,7 @@ class Tree {
         void saveToFile(const string& filename);
         void createRoot(Point p0, Point p1, Point p2);
 		void exportPolylines(Polylines* poly, Triangle* triangle);
+		bool load_density();
 
     private:
         void saveTriangle(ofstream& outFile, Triangle* triangle);
