@@ -11,7 +11,7 @@
 #include "../PolylineCollection.hpp" //defintion of polyline object like struct Chaining 
 #include "../Surface.hpp"  // No idea
 
-#include "density_function.h"
+//#include "density_function.h"
 //#include "triangle.hpp"
 
 #include "Fillpavage.hpp"
@@ -221,6 +221,7 @@ void Tree::export_polylines_to_txt(const Polylines* polylines, const std::string
 
 
 
+/*
 // Fonction pour charger la fonction density
 bool Tree::load_density() {
     // Charger la bibliothèque partagée
@@ -252,7 +253,7 @@ bool Tree::load_density() {
 
     return true; // Return true on success
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -296,12 +297,14 @@ Fillpavage::_fill_surface_single(
     //Tree arbre_triangulaire = Tree([](Point) -> int { return 7; }, 10);//Tree(densityFunction_pavage, 5);
 
     auto variable_density = [x_min, x_max](const Point& P) -> int {
-        return int((4.0 / (x_max - x_min)) * (P.x - x_min) + 3);
+        return 2; //int((4.0 / (x_max - x_min)) * (P.x - x_min) + 3);
     };
+
 
     Tree arbre_triangulaire = Tree();//Tree(variable_density, 10);
     arbre_triangulaire.bbox = &b_box;
-    arbre_triangulaire.load_density();
+    //arbre_triangulaire.load_density();
+    arbre_triangulaire.density = variable_density; 
 
     arbre_triangulaire.createRoot(Point(static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[0].y-10)), 
                                   Point(static_cast<coord_t>(b_box.polygon()[1].x+hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[1].y-10)),

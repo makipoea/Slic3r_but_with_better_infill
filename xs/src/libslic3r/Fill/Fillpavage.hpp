@@ -55,6 +55,7 @@ class Tree {
 		BoundingBox* bbox = nullptr; //bbox de la piece 
         Triangle* root;
         function<int(Point)> density;
+        //int density(Point p);
         int max_depth=5;
 		static void export_polylines_to_txt(const Polylines* polylines, const std::string& filename);
         Tree(function<int(Point)> densFunc = [](Point) { return 2; }, int max_dete = 10);
@@ -63,7 +64,7 @@ class Tree {
         void saveToFile(const string& filename);
         void createRoot(Point p0, Point p1, Point p2);
 		void exportPolylines(Polylines* poly, Triangle* triangle);
-		bool load_density();
+		//bool load_density();
 
     private:
         void saveTriangle(ofstream& outFile, Triangle* triangle);
