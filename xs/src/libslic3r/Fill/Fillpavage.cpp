@@ -303,8 +303,8 @@ Fillpavage::_fill_surface_single(
     arbre_triangulaire.bbox = &b_box;
     arbre_triangulaire.load_density();
 
-    arbre_triangulaire.createRoot(Point(static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[0].y)), 
-                                  Point(static_cast<coord_t>(b_box.polygon()[1].x+hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[1].y)),
+    arbre_triangulaire.createRoot(Point(static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[0].y-10)), 
+                                  Point(static_cast<coord_t>(b_box.polygon()[1].x+hauteur/tan(PI/3)), static_cast<coord_t>(b_box.polygon()[1].y-10)),
                                   Point(static_cast<coord_t>((b_box.polygon()[0].x+b_box.polygon()[1].x)/2), b_box.polygon()[0].y+ static_cast<coord_t>(tan(PI/3)*(largeur/2+hauteur/tan(PI/3)))));
 
     //cout << static_cast<coord_t>(b_box.polygon()[0].x-hauteur/tan(PI/3)) << endl; 
