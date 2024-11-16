@@ -153,7 +153,7 @@ EOF
             if ($^O eq 'MSWin32') {
                 system '.\xs\Build', 'distclean';
             } else {
-		#system './xs/Build', 'distclean'; # makipoea	
+		    #system './xs/Build', 'distclean'; # makipoea	
 		system './xs/Build';
 	    }
         }
@@ -169,7 +169,7 @@ if (@missing_prereqs) {
     exit 1;
 } elsif (!$gui) {
     eval "use App::Prove; 1" or die "Failed to load App::Prove";
-    my $res = 0;#App::Prove->new->run ? 0 : 1# makipoea
+    my $res = 0;#App::Prove->new->run ? 0 : 1;# makipoea # my $res = 0;
     if ($res == 0) {
         print "If you also want to use the GUI you can now run `perl Build.PL --gui` to install the required modules.\n";
     } else {

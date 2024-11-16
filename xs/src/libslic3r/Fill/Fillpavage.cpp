@@ -5,7 +5,7 @@
 #include <tuple>
 #include <cmath>
 #include <mutex>
-#include<dlfcn.h>
+//#include<dlfcn.h>
 
 #include "../ClipperUtils.hpp" //configuration of clipper (and basic function like offcet)
 #include "../PolylineCollection.hpp" //defintion of polyline object like struct Chaining 
@@ -297,7 +297,7 @@ Fillpavage::_fill_surface_single(
     //Tree arbre_triangulaire = Tree([](Point) -> int { return 7; }, 10);//Tree(densityFunction_pavage, 5);
 
     auto variable_density = [x_min, x_max](const Point& P) -> int {
-        return 2; //int((4.0 / (x_max - x_min)) * (P.x - x_min) + 3);
+        return 7; //int((4.0 / (x_max - x_min)) * (P.x - x_min) + 3);
     };
 
 

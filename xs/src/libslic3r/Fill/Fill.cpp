@@ -15,10 +15,11 @@
 #include "FillPlanePath.hpp"
 #include "FillRectilinear.hpp"
 
-// ---------here are our new infill ------------------
+// ---------here are our new infill ------------------ // makipoea
 
 #include "Fillsin.hpp" 
 #include "Fillpavage.hpp"
+#include "FillLine.hpp"
 
 //   ------------------------------------------------ \\
 
@@ -47,7 +48,8 @@ Fill::new_from_type(const InfillPattern type)
         case ipOctagramSpiral:      return new FillOctagramSpiral();
 
         case ipSin:                 return new Fillsin();   // makipoea
-        case ipPavage:              return new Fillpavage(); // makipoea       
+        case ipPavage:              return new Fillpavage(); // makipoea  
+        case ipLine:                return new FillLine(); // makipoea
         
         default: CONFESS("unknown type"); return NULL;
     }
