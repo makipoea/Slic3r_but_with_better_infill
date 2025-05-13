@@ -56,7 +56,7 @@ FillPolynomial::_fill_surface_single(
 
     //std::cout << min_norme << "   " << max_norme << std::endl; 
 
-    Tensor3D polynome_totale = open_polynome_file("/home/makipoea/Documents/prepa/tipe/programme/Slic3r_but_with_better_infill/xs/src/libslic3r/Fill/polynome/polynome_eprouvette.json");
+    Tensor3D polynome_totale = open_polynome_file("/home/makipoea/Documents/prepa/tipe/programme/a-playground-for-oscar/si_avec_parsimonie/analyse_contraintes/polynome.json");
     Tensor2D polynome_densite = slice_polynome_on_z_axis(polynome_totale, this->z);
 
     //polynome_densite = {{0.9}};
