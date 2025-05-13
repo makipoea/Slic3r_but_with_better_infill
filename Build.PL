@@ -3,8 +3,11 @@
 use strict;
 use warnings;
 
+
 use Config;
 use File::Spec;
+
+
 
 my %prereqs = qw(
     Devel::CheckLib                 0
@@ -153,7 +156,7 @@ EOF
             if ($^O eq 'MSWin32') {
                 system '.\xs\Build', 'distclean';
             } else {
-		    #system './xs/Build', 'distclean'; # makipoea	
+	#	system './xs/Build', 'distclean'; # makipoea	
 		system './xs/Build';
 	    }
         }

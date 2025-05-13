@@ -1,0 +1,13 @@
+sudo apt install libglpk-dev
+sudo apt install libeigen3-dev
+
+
+pour ajouter le support de compilation avec eigen : 
+
+sudo mkdir -p /usr/local/include/unsupported
+
+
+sudo ln -s /usr/include/eigen3/Eigen       /usr/local/include/Eigen
+sudo ln -s /usr/include/eigen3/unsupported/Eigen /usr/local/include/unsupported/Eigen
+
+

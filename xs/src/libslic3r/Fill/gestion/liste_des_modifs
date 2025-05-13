@@ -3,3 +3,8 @@ PrintConfig.cpp : 559 / 574
 PrintConfig.hpp  :  89/ 41
 
 Fill.cpp : 48 / 20
+
+
+/ ! \ Lors de l'ajout d'un nouveau remplissage : il faut recompiler l'entiereté du dossier xs : 
+
+decommenter la ligne contenant #makipoea dans le fichier Build.pl

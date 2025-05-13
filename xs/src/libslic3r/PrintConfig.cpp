@@ -557,6 +557,8 @@ PrintConfigDef::PrintConfigDef()
     def->enum_values.push_back("octagramspiral");
     def->enum_values.push_back("sin"); //  makipoea
     def->enum_values.push_back("pavage"); //  makipoea
+    def->enum_values.push_back("line"); // makipoea
+    def->enum_values.push_back("polynomial"); // makipoea
     def->enum_labels.push_back(__TRANS("Rectilinear"));
     def->enum_labels.push_back(__TRANS("Aligned Rectilinear"));
     def->enum_labels.push_back(__TRANS("Grid"));
@@ -572,6 +574,8 @@ PrintConfigDef::PrintConfigDef()
     def->enum_labels.push_back(__TRANS("Octagram Spiral"));
     def->enum_labels.push_back(__TRANS("sinusoidal pattern")); //makipoea
     def->enum_labels.push_back(__TRANS("pavage triangulaire")); //makipoea
+    def->enum_labels.push_back(__TRANS("ligne")); //makipoea
+    def->enum_labels.push_back(__TRANS("decomposition polynomial")); // makipoea	
     def->default_value = new ConfigOptionEnum<InfillPattern>(ipStars);
 
     def = this->add("first_layer_acceleration", coFloat);

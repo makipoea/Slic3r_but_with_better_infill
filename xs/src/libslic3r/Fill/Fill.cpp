@@ -20,6 +20,8 @@
 #include "Fillsin.hpp" 
 #include "Fillpavage.hpp"
 #include "FillLine.hpp"
+#include "FillPolynomial.hpp"
+
 
 //   ------------------------------------------------ \\
 
@@ -50,7 +52,8 @@ Fill::new_from_type(const InfillPattern type)
         case ipSin:                 return new Fillsin();   // makipoea
         case ipPavage:              return new Fillpavage(); // makipoea  
         case ipLine:                return new FillLine(); // makipoea
-        
+	    case ipPolynomial:          return new FillPolynomial();//makipoea       
+ 
         default: CONFESS("unknown type"); return NULL;
     }
 }

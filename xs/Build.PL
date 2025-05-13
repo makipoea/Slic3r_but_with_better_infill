@@ -12,14 +12,19 @@ my $cpp_guess = ExtUtils::CppGuess->new;
 my $mswin = $^O eq 'MSWin32';
 my $linux = $^O eq 'linux';
 
+
+
 # prevent an annoying concatenation warning by Devel::CheckLib
 $ENV{LD_RUN_PATH} //= "";
 
 # HAS_BOOL         : stops Perl/lib/CORE/handy.h from doing "#  define bool char" for MSVC
 # NOGDI            : prevents inclusion of wingdi.h which defines functions Polygon() and Polyline() in global namespace
 # BOOST_ASIO_DISABLE_KQUEUE : prevents a Boost ASIO bug on OS X: https://svn.boost.org/trac/boost/ticket/5339
-my @cflags = qw(-DHAS_BOOL -DNOGDI -DSLIC3RXS -DBOOST_ASIO_DISABLE_KQUEUE -Dexprtk_disable_rtl_io_file -Dexprtk_disable_return_statement -Dexprtk_disable_rtl_vecops -Dexprtk_disable_string_capabilities -Dexprtk_disable_enhanced_features);
+my @cflags = qw(-DHAS_BOOL -DNOGDI -DSLIC3RXS -DBOOST_ASIO_DISABLE_KQUEUE -Dexprtk_disable_rtl_io_file  -Dexprtk_disable_rtl_vecops -Dexprtk_disable_string_capabilities -Dexprtk_disable_enhanced_features); # makipoea j'ai retiré le flag : -Dexprtk_disable_return_statement
 push @cflags, "-DSLIC3R_BUILD_COMMIT=$ENV{SLIC3R_GIT_VERSION}" if defined $ENV{SLIC3R_GIT_VERSION};
+
+push @cflags, "-I/usr/include" if -d "/usr/include"; #makipoea
+
 
 # std=c++11 Enforce usage of C++11 (required now). Minimum compiler supported: gcc 4.9, clang 3.3, MSVC 14.0
 if ($cpp_guess->is_gcc)	{
@@ -30,6 +35,13 @@ if ($cpp_guess->is_gcc)	{
 }
 
 my @ldflags = ();
+
+#makipoea
+my @LIBS = $cpp_guess->is_msvc
+    ? qw(-LIBPATH:src/libslic3r)
+    : qw(-Lsrc/libslic3r);
+#makipoea
+push @LIBS, '-lglpk';# makipoea
 
 if ($linux && (defined $ENV{SLIC3R_STATIC} && $ENV{SLIC3R_STATIC})) {
     push @ldflags, qw(-static-libgcc -static-libstdc++);
@@ -81,7 +93,9 @@ if ($mswin) {
 }
 
 my @INC  = qw(-Isrc/libslic3r);
-my @LIBS = $cpp_guess->is_msvc ? qw(-LIBPATH:src/libslic3r) : qw(-Lsrc/libslic3r);
+#@LIBS = $cpp_guess->is_msvc ? qw(-LIBPATH:src/libslic3r) : qw(-Lsrc/libslic3r); #makipoea
+
+# makipoea la ligne du haut commencait pas in my @LIBS.....
 
 # search for Boost in a number of places
 my @boost_include = ();
@@ -118,6 +132,13 @@ if (defined $ENV{BOOST_INCLUDEDIR}) {
             qw(/opt/local/include /usr/local/include /opt/include /usr/include);
     }
 }
+
+#makipoea
+check_lib(
+    lib     => 'glpk',
+    header  => 'glpk.h',
+) or die "GLPK library not found, please install it.\n";
+#makipoea
 
 my @boost_libs = ();
 if (defined $ENV{BOOST_LIBRARYPATH}) {

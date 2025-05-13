@@ -10,7 +10,6 @@
 #include "../ClipperUtils.hpp" //configuration of clipper (and basic function like offcet)
 #include "../PolylineCollection.hpp" //defintion of polyline object like struct Chaining 
 #include "../Surface.hpp"  // No idea
-
 //#include "density_function.h"
 //#include "triangle.hpp"
 
@@ -31,7 +30,7 @@ FillLine::_fill_surface_single(
 
     std::cout<<"compute line" << std::endl;
 
-    const int nb_ligne = 10;
+    const int nb_ligne = 24;
 
     if (expolygon.contour.points.empty()) return ; // si le polygone est vide on ne fait rien 
 
