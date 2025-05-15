@@ -59,6 +59,12 @@ FillPolynomial::_fill_surface_single(
     Tensor3D polynome_totale = open_polynome_file("/home/makipoea/Documents/prepa/tipe/programme/a-playground-for-oscar/si_avec_parsimonie/analyse_contraintes/polynome.json");
     Tensor2D polynome_densite = slice_polynome_on_z_axis(polynome_totale, this->z);
 
+    /*
+    polynome_densite = {{0.9, 0, 0, 0},
+                        {0  , 0, 0, 0}, 
+                        {0  , 0, 0, 0}, 
+                        {0  , 0, 0, 0}};
+    */
     //polynome_densite = {{0.9}};
 
     int n = polynome_densite.size()-1;
@@ -95,6 +101,11 @@ FillPolynomial::_fill_surface_single(
 
     Tensor2D point_tensor = compute_point_integration(polynome_phi, density , a_vect, b_vect);
     
+
+    std::cout << "point tensseur " << std::endl; 
+    print_matrix(point_tensor);
+    std::cout << "/////////////////////" << std::endl;
+
     for (int i=0; i<=n; i++){
         for (int j=0; j<point_tensor[i].size(); j++){
             double theta = angle_equi[i];

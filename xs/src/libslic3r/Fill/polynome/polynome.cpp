@@ -259,7 +259,6 @@ Tensor2D rehausse_polynome(Tensor2D poly_phi, std::vector<double> a, std::vector
     }
     return poly_phi; 
 }
-
 bool solve_polynomial_in_interval_eigen(
     const std::vector<double>& coeffs_std,
     double y,
@@ -268,40 +267,37 @@ bool solve_polynomial_in_interval_eigen(
     double & result,
     double tol
 ) {
-    /*
-    trouve si il existe x dans [a, b] tels que P(x) = y
-    P etant representer par le vecteur coeffs_std
-    */
- 
-    std::cout << "a = " << a << " b = " << b << " y = " << y << std::endl;
-    print_vector(coeffs_std);
-    // Convertit en Eigen::VectorXd (ordre croissant)
-    Eigen::VectorXd coeffs(coeffs_std.size());
-    for (size_t i = 0; i < coeffs_std.size(); ++i) {
+    int deg = coeffs_std.size() - 1;
+    while (deg >= 0 && std::abs(coeffs_std[deg]) < tol) {
+        --deg;
+    }
+    if (deg < 0) {
+        return false; // Le polynôme est nul, donc aucune solution utile
+    }
+
+    Eigen::VectorXd coeffs(deg + 1);
+    for (int i = 0; i <= deg; ++i) {
         coeffs[i] = coeffs_std[i];
     }
 
-    // Soustrait y au terme constant : P(x) - y
+    // Soustraire y au terme constant
     coeffs[0] -= y;
 
-    // Résolution avec PolynomialSolver
     Eigen::PolynomialSolver<double, Eigen::Dynamic> solver;
     solver.compute(coeffs);
 
-    // Parcours des racines
     for (int i = 0; i < solver.roots().size(); ++i) {
         std::complex<double> root = solver.roots()[i];
-        if (std::abs(root.imag()) < tol) { // Racine réelle
+        if (std::abs(root.imag()) < tol) {
             double x = root.real();
             if (x >= a && x <= b) {
                 result = x;
-                std::cout  << "solution x = " << x << std::endl;
                 return true;
             }
         }
     }
 
-    return false; // Pas de racine réelle dans [a, b]
+    return false;
 }
 
 bool solve_polynomial_in_interval_newtonne(
@@ -312,8 +308,8 @@ bool solve_polynomial_in_interval_newtonne(
     double & result,
     double tol=1e-8
 ) {
-    //std::cout << "a = " << a << " b = " << b << " y = " << y << std::endl;
-    //print_vector(coeffs_std);
+    std::cout << "a = " << a << " b = " << b << " y = " << y << std::endl;
+    print_vector(coeffs_std);
 
     const int max_iter = 100;
     const double h = 1e-6; // pour la dérivée numérique
@@ -371,7 +367,7 @@ Tensor2D compute_point_integration(Tensor2D poly_phi, float ratio_infill, std::v
     }
     float step = all_integrale/(longueur_totale*(n+1)*ratio_infill)*extrusion_witdh;// 10e6 permet de convertir les mm de extrusion_width en coord_t de slic3r 
     
-    std::cout << "step = " << step <<  "longueur total = " << longueur_totale <<  std::endl;
+    //std::cout << "step = " << step <<  "longueur total = " << longueur_totale <<  std::endl;
 
     //step = 20000000000; 
     
@@ -385,13 +381,13 @@ Tensor2D compute_point_integration(Tensor2D poly_phi, float ratio_infill, std::v
             //std::cout << "P(a[i]) = " << evaluate_polynome(primitive_phi[i], a[i]) << "P(b[i]) = " << evaluate_polynome(primitive_phi[i], b[i]) << std::endl;
             //std::cout << "y = " << y  << " a[i] = " << a[i] << " b[i] = " << b[i]  << "step = " << step << std::endl; 
             double root;
-            if (!solve_polynomial_in_interval_newtonne(primitive_phi[i], y, a[i], b[i], root)) break;
+            if (!solve_polynomial_in_interval_eigen(primitive_phi[i], y, a[i], b[i], root)) break;
             //std::cout << "root = " << root << std::endl;
             tensor_point[i].push_back(root);
 
         }
     }
-    std::cout << "sortie " << std::endl; 
+    //std::cout << "sortie " << std::endl; 
     return tensor_point;
 
 }
