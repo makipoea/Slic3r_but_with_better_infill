@@ -1,10 +1,13 @@
 #include <SFML/System/Vector2.hpp>
 
+#include <boost/date_time/time_defs.hpp>
 #include <fstream>
 #include <vector>
 #include <iostream>
 #include <glpk.h>
 #include <optional> 
+#include <utility>
+#include <iomanip> 
 
 #include <cmath>
 
@@ -40,6 +43,52 @@ void print_matrix(const std::vector<std::vector<double>>& mat, int precision, in
     }
 }
 
+void print_l_point(const std::vector<std::vector<std::pair<double, double>>>& points, 
+                   int precision = 3, 
+                   const std::string& point_separator = " -> ")
+{
+    if(points.empty()) {
+        std::cout << "Aucun point à afficher\n";
+        return;
+    }
+
+    std::cout << std::fixed << std::setprecision(precision);
+
+    for(size_t block_idx = 0; block_idx < points.size(); ++block_idx) {
+        const auto& block = points[block_idx];
+        
+        std::cout << "Bloc " << block_idx + 1 << ":\n";
+        
+        if(block.empty()) {
+            std::cout << "  [vide]\n";
+            continue;
+        }
+
+        for(size_t i = 0; i < block.size(); ++i) {
+            const auto& pt = block[i];
+            std::cout << "(" << pt.first << ", " << pt.second << ")";
+            
+            if(i != block.size() - 1) {
+                std::cout << point_separator;
+                
+                // Retour à la ligne tous les 3 points pour la lisibilité
+                if((i + 1) % 3 == 0) std::cout << "\n ";
+            }
+        }
+        std::cout << "\n\n";
+    }
+}
+
+Tensor2D multiply_by_eta(const Tensor2D& input, double eta_x) {
+    Tensor2D result = input;
+    for (auto& row : result) {
+        for (auto& value : row) {
+            value *= eta_x;
+        }
+    }
+    return result;
+}
+
 double binomial(int k, int n) {
     if (k < 0 || k > n) return 0;
     return std::tgamma(n + 1) / (std::tgamma(k + 1) * std::tgamma(n - k + 1));
@@ -55,19 +104,44 @@ double evaluate_polynome(std::vector<double> polynome, double x){
 
 /////// ACTUAL ALGO ///////////////////////////////////
 
-Tensor3D open_polynome_file(std::string filename){
+Tensor3D open_polynome_file(std::string filename) {
     /*
-    ouvre un json contenant un polynome a 3 inconnues sous forme d'un tableau et le retourne sous forme d'un tensseur 3D  
-    les tensseurs sont tels que polynome_[i, j, k] correpond au coeff de X^i * Y^ĵ * Z^k
+    Ouvre un JSON contenant un polynôme à 3 inconnues sous forme d'un tableau
+    et retourne un tenseur 3D (polynome_[i][j][k] correspond au coeff de X^i * Y^j * Z^k)
     */
-    
     Tensor3D polynome_tensor;
+    
     std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Impossible d'ouvrir le fichier : " + filename);
+    }
+
     json json_container;
     file >> json_container;
-    polynome_tensor = json_container.get<Tensor3D>();
-    
+
+    // Récupérer uniquement la partie "tensor"
+    polynome_tensor = json_container["tensor"].get<Tensor3D>();
+
     return polynome_tensor;
+}
+
+
+Tensor2D open_bbox_file(std::string filename) {
+    /*
+    Ouvre un fichier JSON contenant un polynôme et retourne la bounding box (bbox),
+    définie comme une liste de 4 points [x, y].
+    */
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Impossible d'ouvrir le fichier : " + filename);
+    }
+
+    json json_container;
+    file >> json_container;
+
+    // Extraction de la bbox
+    Tensor2D bbox = json_container["bbox"].get<Tensor2D>();
+    return bbox;
 }
 
 Tensor2D slice_polynome_on_z_axis(Tensor3D polynome, double z){
@@ -93,6 +167,56 @@ Tensor2D slice_polynome_on_z_axis(Tensor3D polynome, double z){
     return slice_polynome;
 }
 
+std::vector<double> evaluate_on_x_axis(Tensor2D polynome, double x) {
+    /*
+        polynome[i][j] correspond à X^i * Y^j
+        retourne la liste des coefficients du polynôme en Y obtenu en évaluant X = x
+    */
+
+    if (polynome.empty()) return {};
+
+    // Taille maximale pour Y (nombre de colonnes)
+    size_t maxY = 0;
+    for (const auto& row : polynome) {
+        if (row.size() > maxY) {
+            maxY = row.size();
+        }
+    }
+
+    std::vector<double> result(maxY, 0.0);
+
+    for (size_t i = 0; i < polynome.size(); ++i) {
+        double xi = pow(x, i); // x^i
+        for (size_t j = 0; j < polynome[i].size(); ++j) {
+            result[j] += polynome[i][j] * xi;
+        }
+    }
+
+    return result;
+}
+
+std::vector<double> evaluate_on_y_axis(Tensor2D polynome, double y) {
+    /*
+        polynome[i][j] correspond à X^i * Y^j
+        retourne la liste des coefficients du polynôme en X obtenu en évaluant Y = y
+    */
+
+    if (polynome.empty()) return {};
+
+    // Taille maximale pour X (nombre de lignes)
+    size_t maxX = polynome.size();
+
+    std::vector<double> result(maxX, 0.0);
+
+    for (size_t i = 0; i < polynome.size(); ++i) {
+        for (size_t j = 0; j < polynome[i].size(); ++j) {
+            double yj = pow(y, j); // y^j
+            result[i] += polynome[i][j] * yj;
+        }
+    }
+
+    return result;
+}
 
 Eigen::MatrixXd Matrice_angle(std::vector<double> angle_vect, int k){
     /*
@@ -254,18 +378,20 @@ Tensor2D rehausse_polynome(Tensor2D poly_phi, std::vector<double> a, std::vector
 
     if (minimum < 0){
         for (int i=0; i<nb_poly; i++){
+            std::cout<< "on rehausse de " << -minimum << std::endl; 
             poly_phi[i][0] += epsilon - minimum; 
         }
     }
     return poly_phi; 
 }
+/*
 bool solve_polynomial_in_interval_eigen(
     const std::vector<double>& coeffs_std,
     double y,
     double a,
     double b,
     double & result,
-    double tol
+    double tol =1e-12
 ) {
     int deg = coeffs_std.size() - 1;
     while (deg >= 0 && std::abs(coeffs_std[deg]) < tol) {
@@ -295,6 +421,96 @@ bool solve_polynomial_in_interval_eigen(
                 return true;
             }
         }
+    }
+
+    return false;
+}
+*/
+
+bool solve_polynomial_in_interval_eigen(
+    const std::vector<double>& coeffs_std,
+    double y,
+    double a,
+    double b,
+    double & result,
+    double tol = 1e-12
+) {
+    int deg = coeffs_std.size() - 1;
+
+    // Ignore trailing near-zero coefficients (high degrees)
+    while (deg >= 0 && std::abs(coeffs_std[deg]) < tol) {
+        --deg;
+    }
+
+    if (deg < 0) {
+        std::cerr << "Polynôme nul ou proche de zéro." << std::endl;
+        return false;
+    }
+
+    // Crée un vecteur Eigen avec les coefficients valides
+    Eigen::VectorXd coeffs(deg + 1);
+    for (int i = 0; i <= deg; ++i) {
+        coeffs[i] = coeffs_std[i];
+    }
+
+    // Soustrait y du terme constant pour résoudre P(x) - y = 0
+    coeffs[0] -= y;
+
+    // Vérifie que le polynôme change de signe sur [a, b]
+    auto eval_poly = [&](double x) -> double {
+        double val = 0;
+        double x_pow = 1.0;
+        for (int i = 0; i <= deg; ++i) {
+            val += coeffs[i] * x_pow;
+            x_pow *= x;
+        }
+        return val;
+    };
+
+    double fa = eval_poly(a);
+    double fb = eval_poly(b);
+
+    if (std::abs(fa) < tol) {
+        result = a;
+        return true;
+    }
+    if (std::abs(fb) < tol) {
+        result = b;
+        return true;
+    }
+
+    if (fa * fb > 0) {
+        // Aucun changement de signe → peu probable qu'une racine existe
+        std::cerr << "Pas de changement de signe entre a et b." << std::endl;
+        return false;
+    }
+
+    // Recherche de toutes les racines avec Eigen
+    Eigen::PolynomialSolver<double, Eigen::Dynamic> solver;
+    solver.compute(coeffs);
+
+    bool found = false;
+    double closest_root = std::numeric_limits<double>::quiet_NaN();
+    double min_distance = std::numeric_limits<double>::max();
+
+    for (int i = 0; i < solver.roots().size(); ++i) {
+        std::complex<double> root = solver.roots()[i];
+        if (std::abs(root.imag()) < tol) {
+            double x = root.real();
+            if (x >= a && x <= b) {
+                double dist = std::abs(x - a);  // Choisir le plus proche de a
+                if (dist < min_distance) {
+                    closest_root = x;
+                    min_distance = dist;
+                    found = true;
+                }
+            }
+        }
+    }
+
+    if (found) {
+        result = closest_root;
+        return true;
     }
 
     return false;
@@ -352,32 +568,38 @@ Tensor2D compute_point_integration(Tensor2D poly_phi, float ratio_infill, std::v
     ratio_infill : pourcentage de remplissage entre 0 et 1  
     a, b : borne des points d'intégration 
     */
-    std::cout << "l308" << std::endl;
-    int n = poly_phi.size()-1;
+    //std::cout << "l308" << std::endl;
+    int n = 1;//poly_phi.size()-1; /!\ for curve 
     poly_phi = rehausse_polynome(poly_phi, a, b);
     Tensor2D primitive_phi = primitive(poly_phi);
     Tensor2D tensor_point;
 
     float all_integrale = 0;
     float longueur_totale = 0;
-    for (int i=0; i<primitive_phi.size(); i++){
-        
+
+
+    //for (int i=0; i<primitive_phi.size(); i++){
+    for (int i=0; i<1; i++){  // /!!!!!!!!\ for curve
         all_integrale += evaluate_polynome(primitive_phi[i], b[i]) - evaluate_polynome(primitive_phi[i], a[i]);
         longueur_totale += b[i] - a[i]; 
     }
     float step = all_integrale/(longueur_totale*(n+1)*ratio_infill)*extrusion_witdh;// 10e6 permet de convertir les mm de extrusion_width en coord_t de slic3r 
-    
-    //std::cout << "step = " << step <<  "longueur total = " << longueur_totale <<  std::endl;
-
+    //float step = all_integrale/()
+    /*
+    std::cout << "step = " << step <<  "longueur total = " << longueur_totale <<  std::endl;
+    print_matrix(poly_phi);
+    std::cout<< "density = " <<ratio_infill << std::endl;
+    print_vector(a);
+    print_vector(b);
     //step = 20000000000; 
-    
+    */
     for (int i=0; i<primitive_phi.size(); i++){
         tensor_point.push_back({a[i]});
         double y = evaluate_polynome(primitive_phi[i], a[i]);
 
         while (true){
             y += step;
-            print_vector(primitive_phi[i]);
+            //print_vector(primitive_phi[i]);
             //std::cout << "P(a[i]) = " << evaluate_polynome(primitive_phi[i], a[i]) << "P(b[i]) = " << evaluate_polynome(primitive_phi[i], b[i]) << std::endl;
             //std::cout << "y = " << y  << " a[i] = " << a[i] << " b[i] = " << b[i]  << "step = " << step << std::endl; 
             double root;
@@ -388,6 +610,61 @@ Tensor2D compute_point_integration(Tensor2D poly_phi, float ratio_infill, std::v
         }
     }
     //std::cout << "sortie " << std::endl; 
+    //print_matrix(tensor_point);
     return tensor_point;
 
+}
+
+
+
+std::vector<std::vector<std::pair<double, double>>> extract_blocks_with_xy(
+    const Tensor2D& matrix,
+    const std::vector<double>& l_axis,
+    Axis_maki axis_mode)
+{
+    std::vector<std::vector<std::pair<double, double>>> blocks;
+
+    if (matrix.empty() || matrix.size() != l_axis.size())
+        return blocks;
+
+    // Déterminer la longueur maximale des colonnes
+    size_t max_cols = 0;
+    for (const auto& row : matrix) {
+        max_cols = std::max(max_cols, row.size());
+    }
+
+    // Parcours colonne par colonne pour les deux axes
+    for (size_t col = 0; col < max_cols; ++col) {
+        std::vector<std::pair<double, double>> current_block;
+        bool in_block = false;
+
+        for (size_t i = 0; i < matrix.size(); ++i) {
+            // Vérifier si la colonne existe dans cette ligne
+            const bool has_value = (col < matrix[i].size());
+
+            if (has_value) {
+                // Créer la paire selon l'orientation
+                const auto point = (axis_mode == Axis_maki::X) 
+                    ? std::make_pair(l_axis[i], matrix[i][col])  // X fixe -> (l_axis, valeur)
+                    : std::make_pair(matrix[i][col], l_axis[i]); // Y fixe -> (valeur, l_axis)
+
+                current_block.push_back(point);
+                in_block = true;
+            } else {
+                // Fin de bloc détectée
+                if (in_block) {
+                    blocks.push_back(current_block);
+                    current_block.clear();
+                    in_block = false;
+                }
+            }
+        }
+
+        // Ajouter le dernier bloc de la colonne
+        if (in_block) {
+            blocks.push_back(current_block);
+        }
+    }
+
+    return blocks;
 }

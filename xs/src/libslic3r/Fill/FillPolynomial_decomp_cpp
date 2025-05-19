@@ -1,0 +1,156 @@
+#include <cstddef>
+#include <iostream>
+#include <linux/limits.h>
+#include <vector>
+#include <tuple>
+#include <cmath>
+#include <mutex>
+#include <complex>
+#include <string>
+//#include<dlfcn.h>
+
+#include "../ClipperUtils.hpp" //configuration of clipper (and basic function like offcet)
+#include "../PolylineCollection.hpp" //defintion of polyline object like struct Chaining 
+#include "../Surface.hpp"  // No idea
+//#include "density_function.h"
+//#include "triangle.hpp"
+
+#include "FillPolynomial.hpp"
+#include "polynome/polynome.hpp"
+
+std::mutex console_mutex_polynomial;
+
+constexpr double pi = 3.14159265358979323846;
+
+std::string json_path = "/home/makipoea/Documents/prepa/tipe/programme/a-playground-for-oscar/si_avec_parsimonie/analyse_contraintes/polynome.json";
+
+const int scale_from_mm = 10e5;
+
+
+namespace Slic3r {
+
+std::vector<double> sim_to_slicer(double p_x, double p_y, double center_sim_x, double center_sim_y, double center_slicr_x, double center_slicr_y){
+    return {(p_x-center_sim_x)*scale_from_mm+center_slicr_x, (p_y-center_sim_y)*scale_from_mm+center_slicr_y};
+}
+
+std::vector<double> slicer_to_sim(double p_x, double p_y, double center_sim_x, double center_sim_y, double center_slicr_x, double center_slicr_y){
+    return {((p_x-center_slicr_x)/scale_from_mm+center_sim_x), ((p_y-center_slicr_y)/scale_from_mm+center_sim_y)};
+}
+
+void
+FillPolynomial::_fill_surface_single(
+    unsigned int                    thickness_layers,
+    const direction_t               &direction,
+    ExPolygon                       &expolygon,
+    Polylines*                      polylines_out)
+{
+    std::lock_guard<std::mutex> lock(console_mutex_polynomial);
+
+    //std::cout<<"compute polynome"<< this->z << "/ " <<density <<std::endl;
+    Polylines path_out;
+
+    BoundingBox b_box_slicr = expolygon.bounding_box();
+
+    Tensor2D b_box_sim = open_bbox_file(json_path);
+
+    double center_sim_x = (b_box_sim[0][0]+b_box_sim[2][0])/2;
+    double center_sim_y = (b_box_sim[0][1]+b_box_sim[2][1])/2;
+
+    Point center_slicr = b_box_slicr.polygon().centroid();
+
+    std::cout << "ratio_x " << b_box_slicr.polygon()[1].x - b_box_slicr.polygon()[0].x << "  " << b_box_sim[1][0]-b_box_sim[0][0] << std::endl;
+
+    std::cout << "ratio_y " << b_box_slicr.max.y - b_box_slicr.min.y << "  " << b_box_sim[3][1]-b_box_sim[0][1] << std::endl;
+
+
+    std::cout << "center_sim = " << center_sim_x << "  " << center_sim_y << std::endl;
+
+    std::cout << "center_slicr = " << center_slicr.x << "  " << center_slicr.y << std::endl;
+
+    for (int i=0; i<4; i++){
+        std::cout<< "slicer " <<b_box_slicr.polygon()[i].x << "   " << b_box_slicr.polygon()[i].y  << std::endl;
+        std::cout<< "sim " <<b_box_sim[i][0] << "   " << b_box_sim[i][1]  << std::endl;
+        std::vector<double> ps = slicer_to_sim(b_box_slicr.polygon()[i].x, b_box_slicr.polygon()[i].y, center_sim_x, center_sim_y, center_slicr.x, center_slicr.y);
+        std::cout<< "slicer -> sim " << ps[0] << "   " << ps[1]  << std::endl;
+        std::vector<double> ps2 = sim_to_slicer(ps[0], ps[1], center_sim_x, center_sim_y, center_slicr.x,  center_slicr.y);
+        std::cout<< "slicer -> sim -> slicr " << ps2[0] << "   " << ps2[1]  << std::endl;
+    }
+
+    Tensor3D polynome_totale = open_polynome_file(json_path);
+    Tensor2D polynome_densite = slice_polynome_on_z_axis(polynome_totale, this->z);
+
+    /*
+    polynome_densite = {{0.9, 0, 0, 0},
+                        {0  , 0, 0, 0}, 
+                        {0  , 0, 0, 0}, 
+                        {0  , 0, 0, 0}};
+    
+    */                    
+    //polynome_densite = {{0.1}};
+
+    int n = polynome_densite.size()-1;
+
+    std::vector<double> angle_equi;
+
+    for (int i = 0; i<=n; i++){
+        angle_equi.push_back(i*pi/(n+1));
+    }
+
+    Tensor2D polynome_phi = decomposition_polynomial(polynome_densite, angle_equi);
+
+    std::vector<double> a_vect;
+    std::vector<double> b_vect; 
+
+    for (int i=0; i<=n; i++){
+        double a = INFINITY;
+        double b = -INFINITY;
+        for (int j=0; j<4; j++){
+            
+            double theta = angle_equi[i];
+            std::vector<double> coin = slicer_to_sim(b_box_slicr.polygon()[j].x, b_box_slicr.polygon()[j].y, center_sim_x, center_sim_y, center_slicr.x, center_slicr.y); 
+
+            double v = std::cos(theta)*coin[0] + std::sin(theta)*coin[1];
+            if (v > b){
+                b = v;
+            }
+            if (v < a){
+                a = v;
+            }
+        }
+        
+        a_vect.push_back(a);
+        b_vect.push_back(b);    
+    }
+
+    Tensor2D point_tensor = compute_point_integration(polynome_phi, density , a_vect, b_vect);
+    
+
+    //std::cout << "point tensseur " << std::endl; 
+    //print_matrix(point_tensor);
+    //std::cout << "/////////////////////" << std::endl;
+
+    for (int i=0; i<=n; i++){
+        for (int j=0; j<point_tensor[i].size(); j++){
+            double theta = angle_equi[i];
+            double x = point_tensor[i][j];
+            double height = 200;
+            //Point p1 = Point(x*scale_from_mm, height*scale_from_mm).rotated(theta);
+            //Point p2 = Point(x*scale_from_mm, -height*scale_from_mm).rotated(theta);
+            Point p1 = Point(x, height).rotated(theta);
+            Point p2 = Point(x, -height).rotated(theta);
+
+            std::vector<double> p1_v = sim_to_slicer(p1.x, p1.y, center_sim_x, center_sim_y, center_slicr.x, center_slicr.y);
+            
+            std::vector<double> p2_v = sim_to_slicer(p2.x, p2.y, center_sim_x, center_sim_y, center_slicr.x, center_slicr.y);
+            
+
+            path_out.push_back(Line(Point(static_cast<coord_t>(p1_v[0]), static_cast<coord_t>(p1_v[1])), Point(static_cast<coord_t>(p2_v[0]), static_cast<coord_t>(p2_v[1]))));  
+        }
+    }
+    
+
+    *polylines_out = intersection_pl(path_out, expolygon);
+
+}
+
+} // namespace Slic3r

@@ -7,17 +7,30 @@
 #include <unsupported/Eigen/Polynomials>
 #include <complex>
 #include <iomanip>
+#include <utility>
 
 
 
 using Tensor2D = std::vector<std::vector<double>>;
 using Tensor3D = std::vector<Tensor2D>;
 
+enum class Axis_maki { X, Y };
+
 void print_vector(const std::vector<double>& vec, int precision = 6);
 void print_matrix(const std::vector<std::vector<double>>& mat, int precision = 6, int width = 8); 
+void print_l_point(const std::vector<std::vector<std::pair<double, double>>>& points, 
+                   int precision, 
+                   const std::string& point_separator);
+Tensor2D multiply_by_eta(const Tensor2D& input, double eta_x);
+
 
 Tensor3D open_polynome_file(std::string filename);
+Tensor2D open_bbox_file(std::string filename);
+
 Tensor2D slice_polynome_on_z_axis(Tensor3D polynome, double z);
+
+std::vector<double> evaluate_on_x_axis(Tensor2D polynome, double x);
+std::vector<double> evaluate_on_y_axis(Tensor2D polynome, double y);
 
 Eigen::MatrixXd Matrice_angle(std::vector<double> angle_vect, int k);
 Eigen::VectorXd find_max_min_solution(const Eigen::MatrixXd& A, const Eigen::VectorXd& b); 
@@ -32,9 +45,13 @@ bool solve_polynomial_in_interval_eigen(
     double a,
     double b,
     double & result,  
-    double tol = 1e-8
+    double tol
 );
 
 Tensor2D compute_point_integration(Tensor2D poly_phi, float ratio_infill,  std::vector<double> a, std::vector<double> b, float extrusion_witdh=0.4); 
+std::vector<std::vector<std::pair<double, double>>> extract_blocks_with_xy(
+    const Tensor2D& matrix,
+    const std::vector<double>& l_axis,
+    Axis_maki axis_mode);
 
 #endif //POLYNOME_HPP
