@@ -443,7 +443,7 @@ bool solve_polynomial_in_interval_eigen(
     }
 
     if (deg < 0) {
-        std::cerr << "Polynôme nul ou proche de zéro." << std::endl;
+        //std::cerr << "Polynôme nul ou proche de zéro." << std::endl;
         return false;
     }
 
@@ -481,7 +481,7 @@ bool solve_polynomial_in_interval_eigen(
 
     if (fa * fb > 0) {
         // Aucun changement de signe → peu probable qu'une racine existe
-        std::cerr << "Pas de changement de signe entre a et b." << std::endl;
+        //std::cerr << "Pas de changement de signe entre a et b." << std::endl;
         return false;
     }
 
@@ -570,7 +570,7 @@ Tensor2D compute_point_integration(Tensor2D poly_phi, float ratio_infill, std::v
     */
     //std::cout << "l308" << std::endl;
     int n = 1;//poly_phi.size()-1; /!\ for curve 
-    poly_phi = rehausse_polynome(poly_phi, a, b);
+    //poly_phi = rehausse_polynome(poly_phi, a, b);
     Tensor2D primitive_phi = primitive(poly_phi);
     Tensor2D tensor_point;
 
